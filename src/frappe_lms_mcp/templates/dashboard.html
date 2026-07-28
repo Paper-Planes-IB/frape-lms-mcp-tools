@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Frappe LMS{% endblock %}
+{% set active_page = 'home' %}
+
+{% block content %}
+<div class="card">
+    <h2>📊 Overview</h2>
+    {% if active %}
+    <div class="grid-2">
+        <div class="stat">
+            <strong>{{ active.name }}</strong><br>
+            <span style="color: #6c757d;">{{ active.base_url }}</span><br>
+            <span class="badge badge-active">Active</span>
+            <span style="font-size: 0.8rem; color: #6c757d;"> · {{ active.username }}</span>
+        </div>
+        <div class="stat">
+            <strong>{{ courses|length }}</strong> cached courses<br>
+            <a href="/courses" class="btn btn-secondary btn-sm" style="margin-top: 0.5rem;">Browse Cache</a>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty">
+        <p style="margin-bottom: 1rem;">No active connection. Add one to get started.</p>
+        <a href="/login" class="btn btn-primary">+ Add Connection</a>
+    </div>
+    {% endif %}
+</div>
+
+{% if courses %}
+<div class="card">
+    <h2>📚 Recent Cached Courses</h2>
+    <table>
+        <thead>
+            <tr><th>Title</th><th>Connection</th><th>Chapters</th><th>Lessons</th><th>Quizzes</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for c in courses %}
+            <tr>
+                <td>
+                    <a href="/courses/{{ c.id }}" style="text-decoration: none; color: #4361ee; font-weight: 500;">
+                        {{ c.title }}
+                    </a>
+                    <br><span style="font-size: 0.75rem; color: #adb5bd;">{{ c.frappe_course_id }}</span>
+                </td>
+                <td>{{ c.connection_name }}</td>
+                <td>{{ c.chapter_count }}</td>
+                <td>{{ c.lesson_count }}</td>
+                <td>{{ c.quiz_count }}</td>
+                <td><a href="/courses/{{ c.id }}" class="btn btn-secondary btn-sm">View</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>🚀 Quick Actions</h2>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <a href="/login" class="btn btn-primary">+ Add Connection</a>
+        <a href="/courses/import" class="btn btn-secondary">Import from Frappe</a>
+        <a href="/connections" class="btn btn-secondary">Manage Connections</a>
+        <a href="/logs" class="btn btn-secondary">View Logs</a>
+    </div>
+</div>
+{% endblock %}

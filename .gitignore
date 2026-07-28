@@ -1,0 +1,32 @@
+# =====================
+# Secrets & credentials
+# =====================
+.env
+.env.*
+!.env.example
+
+# =====================
+# SQLite database (contains API keys & cached data)
+# =====================
+data/
+
+# =====================
+# Python
+# =====================
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg-link
+.venv/
+venv/
+dist/
+build/
+
+# =====================
+# OS / Editor
+# =====================
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/

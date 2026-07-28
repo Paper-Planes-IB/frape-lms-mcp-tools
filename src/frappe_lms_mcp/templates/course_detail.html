@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }} — Course Detail{% endblock %}
+{% set active_page = 'courses' %}
+
+{% block content %}
+<div class="card">
+    <h2>{{ course.title }}</h2>
+    <div class="grid-2" style="margin-bottom: 1rem;">
+        <div class="stat">
+            <strong>{{ course.frappe_course_id }}</strong><br>
+            <span style="color: #6c757d;">Frappe Course ID (slug)</span>
+        </div>
+        <div class="stat">
+            <strong>{{ course.connection_name }}</strong><br>
+            <span style="color: #6c757d;">Source connection</span>
+        </div>
+        <div class="stat">
+            <strong>{{ course.chapter_count }}</strong> chapters ·
+            <strong>{{ course.lesson_count }}</strong> lessons ·
+            <strong>{{ course.quiz_count }}</strong> quizzes
+        </div>
+        <div class="stat">
+            <span style="color: #6c757d;">Cached: {{ course.created_at[:16] }}</span><br>
+            <span style="color: #6c757d;">Updated: {{ course.updated_at[:16] }}</span>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
+        {% if spec_json_pretty %}
+        <form method="POST" action="/courses/{{ course.id }}/reupload" style="display: inline;">
+            <label style="display: inline; font-size: 0.8rem;">Re-upload to:</label>
+            <select name="connection_name" style="width: auto; display: inline-block; margin-bottom: 0;">
+                <option value="">Active connection</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Re-upload</button>
+        </form>
+        {% else %}
+        <span style="color: #6c757d; font-size: 0.85rem;">⚠ No full spec cached (imported without spec). Re-upload not available.</span>
+        {% endif %}
+        <form method="POST" action="/courses/{{ course.id }}/delete" style="display: inline;"
+              onsubmit="return confirm('Remove this course from cache? (The course in Frappe is NOT affected.)');">
+            <button type="submit" class="btn btn-danger btn-sm">Remove from Cache</button>
+        </form>
+    </div>
+</div>
+
+{% if spec_json_pretty %}
+<div class="card">
+    <h2>📋 Course Spec (JSON)</h2>
+    <p style="color: #6c757d; font-size: 0.85rem; margin-bottom: 0.75rem;">
+        This is the full <code>create_full_course</code> spec. It can be re-uploaded
+        to any Frappe instance to recreate this course.
+    </p>
+    <pre>{{ spec_json_pretty }}</pre>
+</div>
+{% endif %}
+
+{% if spec.chapters %}
+<div class="card">
+    <h2>📖 Course Outline</h2>
+    <table>
+        <thead><tr><th>#</th><th>Chapter</th><th>Lessons</th><th>Quiz</th></tr></thead>
+        <tbody>
+            {% for ch in spec.chapters %}
+            {% set ns = namespace(quizzes=[]) %}
+            {% for l in ch.lessons %}
+                {% if l.quiz %}{% set ns.quizzes = ns.quizzes + [l.quiz.title] %}{% endif %}
+            {% endfor %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><strong>{{ ch.title }}</strong></td>
+                <td>
+                    {% for l in ch.lessons %}
+                    {{ l.title }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                </td>
+                <td>{% if ns.quizzes %}✓ {{ ns.quizzes | join(', ') }}{% else %}—{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

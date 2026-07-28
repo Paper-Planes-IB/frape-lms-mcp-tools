@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Connections — Frappe LMS{% endblock %}
+{% set active_page = 'connections' %}
+
+{% block content %}
+<div class="card">
+    <h2>🔗 Frappe LMS Connections</h2>
+    {% if connections %}
+    <table>
+        <thead>
+            <tr><th>Name</th><th>URL</th><th>User</th><th>API Key</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            {% for c in connections %}
+            <tr>
+                <td><strong>{{ c.name }}</strong></td>
+                <td><span style="font-size: 0.85rem;">{{ c.base_url }}</span><br>
+                    <span style="font-size: 0.75rem; color: #adb5bd;">{{ c.site }}</span></td>
+                <td>{{ c.username or '—' }}</td>
+                <td><code style="font-size: 0.8rem;">{{ c.api_key[:8] }}…</code>
+                    <span style="font-size: 0.75rem; color: #adb5bd;">{{ c.api_secret }}</span></td>
+                <td>
+                    {% if c.is_active %}
+                    <span class="badge badge-active">Active</span>
+                    {% else %}
+                    <span class="badge badge-inactive">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not c.is_active %}
+                    <form method="POST" action="/connections/{{ c.id }}/activate" style="display: inline;">
+                        <button type="submit" class="btn btn-primary btn-sm">Activate</button>
+                    </form>
+                    {% endif %}
+                    <form method="POST" action="/connections/{{ c.id }}/delete" style="display: inline;"
+                          onsubmit="return confirm('Delete connection &quot;{{ c.name }}&quot;? Cached courses will also be removed.');">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <p>No connections yet.</p>
+    </div>
+    {% endif %}
+    <div style="margin-top: 1rem;">
+        <a href="/login" class="btn btn-primary">+ Add Connection</a>
+    </div>
+</div>
+{% endblock %}

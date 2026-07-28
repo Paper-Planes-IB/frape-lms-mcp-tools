@@ -1,0 +1,178 @@
+{
+  "title": "Introduction to Web Development",
+  "short_introduction": "Learn HTML, CSS, and JavaScript fundamentals from scratch",
+  "description": "<p>A comprehensive introduction to web development covering HTML structure, CSS styling, and JavaScript interactivity. Perfect for complete beginners.</p>",
+  "instructor": "Administrator",
+  "tags": "Web, HTML, CSS, JavaScript, Beginner",
+  "category": "",
+  "image": "/assets/lms/images/course_card.jpeg",
+  "video_link": "cd1s3w8D7do",
+  "card_gradient": "Blue",
+  "published": false,
+  "chapters": [
+    {
+      "title": "HTML Fundamentals",
+      "lessons": [
+        {
+          "title": "What is HTML?",
+          "include_in_preview": true,
+          "content": {
+            "headers": [{"text": "Understanding HTML", "level": 2}],
+            "paragraphs": [
+              "HTML (HyperText Markup Language) is the standard markup language for creating web pages.",
+              "It describes the structure of a web page using elements represented by tags."
+            ],
+            "lists": [
+              {"items": ["<html> - root element", "<head> - metadata", "<body> - visible content"], "ordered": false}
+            ]
+          }
+        },
+        {
+          "title": "HTML Structure",
+          "content": {
+            "paragraphs": ["Every HTML document follows a basic structure:"],
+            "code": [
+              {
+                "code": "<!DOCTYPE html>\n<html>\n<head>\n    <title>My Page</title>\n</head>\n<body>\n    <h1>Hello World</h1>\n</body>\n</html>",
+                "language": "html"
+              }
+            ]
+          }
+        },
+        {
+          "title": "HTML Knowledge Check",
+          "content": {"paragraphs": ["Let us test your understanding of HTML basics."]},
+          "quiz": {
+            "title": "HTML Basics Quiz",
+            "passing_percentage": 70,
+            "questions": [
+              {
+                "question": "What does HTML stand for?",
+                "type": "Choices",
+                "options": [
+                  {"text": "Hyper Text Markup Language", "correct": true, "explanation": "Correct! HTML stands for HyperText Markup Language."},
+                  {"text": "High Tech Modern Language", "correct": false},
+                  {"text": "Home Tool Markup Language", "correct": false}
+                ]
+              },
+              {
+                "question": "Which tag is used for the largest heading?",
+                "type": "Choices",
+                "options": [
+                  {"text": "<h6>", "correct": false},
+                  {"text": "<h1>", "correct": true, "explanation": "Correct! <h1> is the largest heading tag."},
+                  {"text": "<head>", "correct": false}
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "CSS Styling",
+      "lessons": [
+        {
+          "title": "Introduction to CSS",
+          "include_in_preview": true,
+          "content": {
+            "headers": [{"text": "What is CSS?", "level": 2}],
+            "paragraphs": [
+              "CSS (Cascading Style Sheets) controls the visual presentation of HTML elements.",
+              "It allows you to style colors, fonts, layouts, and animations."
+            ]
+          }
+        },
+        {
+          "title": "CSS Selectors and Properties",
+          "content": {
+            "paragraphs": ["CSS uses selectors to target HTML elements and properties to style them:"],
+            "code": [
+              {
+                "code": "body {\n    background-color: #f0f0f0;\n    font-family: Arial, sans-serif;\n}\n\nh1 {\n    color: #333;\n    text-align: center;\n}",
+                "language": "css"
+              }
+            ]
+          }
+        },
+        {
+          "title": "CSS Quiz",
+          "content": {"paragraphs": ["Test your CSS knowledge."]},
+          "quiz": {
+            "title": "CSS Basics Quiz",
+            "passing_percentage": 60,
+            "questions": [
+              {
+                "question": "Which property changes the text color?",
+                "type": "Choices",
+                "options": [
+                  {"text": "font-color", "correct": false},
+                  {"text": "color", "correct": true, "explanation": "The 'color' property sets the text color."},
+                  {"text": "text-style", "correct": false}
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "JavaScript Basics",
+      "lessons": [
+        {
+          "title": "Introduction to JavaScript",
+          "content": {
+            "headers": [{"text": "What is JavaScript?", "level": 2}],
+            "paragraphs": [
+              "JavaScript is a programming language that adds interactivity to web pages.",
+              "It runs in the browser and can manipulate HTML and CSS in real-time."
+            ],
+            "embeds": [
+              {"service": "youtube", "source": "https://www.youtube.com/watch?v=W6NZfCO5SIo", "caption": "JavaScript in 100 seconds"}
+            ]
+          }
+        },
+        {
+          "title": "Variables and Functions",
+          "content": {
+            "paragraphs": ["JavaScript uses variables to store data and functions to organize code:"],
+            "code": [
+              {
+                "code": "let greeting = 'Hello';\n\nfunction sayHello(name) {\n    console.log(greeting + ', ' + name + '!');\n}\n\nsayHello('World');",
+                "language": "javascript"
+              }
+            ]
+          }
+        },
+        {
+          "title": "JavaScript Quiz",
+          "content": {"paragraphs": ["Verify your JavaScript understanding."]},
+          "quiz": {
+            "title": "JavaScript Basics Quiz",
+            "passing_percentage": 70,
+            "questions": [
+              {
+                "question": "Which keyword declares a variable that can be reassigned?",
+                "type": "Choices",
+                "options": [
+                  {"text": "const", "correct": false},
+                  {"text": "let", "correct": true, "explanation": "'let' allows reassignment; 'const' does not."},
+                  {"text": "fixed", "correct": false}
+                ]
+              },
+              {
+                "question": "What does the console.log() function do?",
+                "type": "Choices",
+                "options": [
+                  {"text": "Prints output to the console", "correct": true},
+                  {"text": "Creates a log file", "correct": false},
+                  {"text": "Sends an email", "correct": false}
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Frappe LMS Dashboard{% endblock %}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa; color: #1a1a2e; line-height: 1.6;
+        }
+        .navbar {
+            background: #171738; padding: 0 2rem; display: flex;
+            align-items: center; justify-content: space-between; height: 56px;
+        }
+        .navbar a {
+            color: #a0a0c0; text-decoration: none; margin-right: 1.5rem;
+            font-size: 0.9rem; font-weight: 500; transition: color 0.2s;
+        }
+        .navbar a:hover, .navbar a.active { color: #fff; }
+        .navbar .brand { color: #fff; font-weight: 700; font-size: 1.1rem; }
+        .container { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+        .card {
+            background: #fff; border-radius: 10px; padding: 1.5rem;
+            margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .card h2 { font-size: 1.2rem; margin-bottom: 1rem; color: #171738; }
+        .flash {
+            padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        .flash.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .flash.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .flash.warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .btn {
+            display: inline-block; padding: 0.5rem 1.2rem; border: none;
+            border-radius: 6px; font-size: 0.9rem; font-weight: 500;
+            cursor: pointer; text-decoration: none; transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.85; }
+        .btn-primary { background: #4361ee; color: #fff; }
+        .btn-danger { background: #e63946; color: #fff; }
+        .btn-secondary { background: #6c757d; color: #fff; }
+        .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
+        form { display: inline; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid #e9ecef; }
+        th { color: #6c757d; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
+        tr:hover { background: #f8f9fa; }
+        .badge {
+            display: inline-block; padding: 0.2rem 0.6rem; border-radius: 20px;
+            font-size: 0.75rem; font-weight: 600;
+        }
+        .badge-active { background: #d4edda; color: #155724; }
+        .badge-inactive { background: #e9ecef; color: #6c757d; }
+        input[type="text"], input[type="password"], input[type="url"], select {
+            width: 100%; padding: 0.5rem 0.7rem; border: 1px solid #ced4da;
+            border-radius: 6px; font-size: 0.9rem; margin-bottom: 0.75rem;
+        }
+        input:focus { outline: none; border-color: #4361ee; }
+        label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.3rem; color: #495057; }
+        pre {
+            background: #1a1a2e; color: #a5d6ff; padding: 1rem; border-radius: 8px;
+            overflow-x: auto; font-size: 0.82rem; line-height: 1.5;
+        }
+        .empty { text-align: center; padding: 2rem; color: #6c757d; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .stat { font-size: 0.8rem; color: #6c757d; }
+        .stat strong { color: #171738; font-size: 1rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div>
+            <span class="brand">🎓 Frappe LMS</span>
+        </div>
+        <div>
+            <a href="/" class="{% if active_page == 'home' %}active{% endif %}">Dashboard</a>
+            <a href="/connections" class="{% if active_page == 'connections' %}active{% endif %}">Connections</a>
+            <a href="/courses" class="{% if active_page == 'courses' %}active{% endif %}">Courses</a>
+            <a href="/courses/import" class="{% if active_page == 'import' %}active{% endif %}">Import</a>
+            <a href="/logs" class="{% if active_page == 'logs' %}active{% endif %}">Logs</a>
+            <a href="/login">+ Add Connection</a>
+        </div>
+    </nav>
+    <div class="container">
+        {% for flash in flashes %}
+        <div class="flash {{ flash.category }}">{{ flash.message }}</div>
+        {% endfor %}
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

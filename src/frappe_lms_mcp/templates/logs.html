@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Operation Logs — Frappe LMS{% endblock %}
+{% set active_page = 'logs' %}
+
+{% block content %}
+<div class="card">
+    <h2>📜 Operation Audit Log</h2>
+    {% if logs %}
+    <table>
+        <thead>
+            <tr><th>Time</th><th>Connection</th><th>Operation</th><th>Entity</th><th>Name</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td><span style="font-size: 0.8rem; color: #6c757d;">{{ log.created_at[:19] }}</span></td>
+                <td>{{ log.connection_name or '—' }}</td>
+                <td>
+                    {% if log.operation == 'create' %}<span class="badge badge-active">create</span>
+                    {% elif log.operation == 'delete' %}<span class="badge" style="background:#f8d7da;color:#721c24;">delete</span>
+                    {% elif log.operation == 'reupload' %}<span class="badge" style="background:#cce5ff;color:#004085;">reupload</span>
+                    {% elif log.operation == 'import' %}<span class="badge" style="background:#fff3cd;color:#856404;">import</span>
+                    {% else %}<span class="badge badge-inactive">{{ log.operation }}</span>{% endif %}
+                </td>
+                <td>{{ log.entity_type }}</td>
+                <td><code style="font-size: 0.8rem;">{{ log.entity_name or '—' }}</code></td>
+                <td>
+                    {% if log.details_json %}
+                    <span style="font-size: 0.78rem; color: #6c757d;">{{ log.details_json[:100] }}{% if log.details_json|length > 100 %}…{% endif %}</span>
+                    {% else %}—{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <p>No operations logged yet.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

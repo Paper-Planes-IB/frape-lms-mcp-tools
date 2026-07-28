@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Import Course — Frappe LMS{% endblock %}
+{% set active_page = 'import' %}
+
+{% block content %}
+<div class="card" style="max-width: 480px; margin: 0 auto;">
+    <h2>📥 Import Course from Frappe</h2>
+    {% if not active %}
+    <div class="flash warning">No active connection. Add one first.</div>
+    {% else %}
+    <p style="color: #6c757d; font-size: 0.9rem; margin-bottom: 1rem;">
+        Import a course from <strong>{{ active.name }}</strong> ({{ active.base_url }})
+        into the local cache. The course metadata will be stored in SQLite for quick
+        lookup. Use the MCP tool <code>import_course_from_frappe</code> for programmatic access.
+    </p>
+    {% endif %}
+    <form method="POST" action="/courses/import">
+        <label>Course Slug (Frappe course ID)</label>
+        <input type="text" name="course_slug" placeholder="e.g. my-python-course" required>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+            Import to Cache
+        </button>
+    </form>
+</div>
+{% endblock %}
