@@ -5,19 +5,33 @@ description: Manage Frappe LMS courses, chapters, lessons, quizzes, and enrollme
 
 # Frappe LMS Manager
 
-Manage a Frappe LMS instance (courses, chapters, lessons, quizzes, enrollments, batches, certificates) using the `frappe-lms-mcp` MCP server.
+Manage a Frappe LMS instance (courses, chapters, lessons, quizzes, enrollments, batches, certificates) using the `frappe-lms-mcp` MCP server. Works with ZCode, Claude Desktop, Claude Code, OpenAI Codex, and any MCP-compatible client.
 
 ## Prerequisites
 
-1. The Frappe LMS Docker instance must be running (default: `http://localhost:8000`).
-2. The MCP server must be configured in ZCode's MCP settings (see `README.md` in the project root for setup).
-3. Environment variables (or defaults): `FRAPPE_URL`, `FRAPPE_SITE`, `FRAPPE_USERNAME`, `FRAPPE_PASSWORD`.
+1. **Frappe LMS** must be running (default: `http://localhost:8000`).
+2. **MCP server** must be configured in your AI agent's MCP settings.
+3. **Credentials** — either:
+   - Set `FRAPPE_URL`, `FRAPPE_SITE`, `FRAPPE_USERNAME`, `FRAPPE_PASSWORD` as environment variables, or
+   - Log in via the web dashboard at `http://localhost:8080/login` (credentials stored in SQLite automatically).
+
+## Web Dashboard
+
+The MCP server also runs a web dashboard on `http://localhost:8080` (started automatically). Use it to:
+- **Login** to a Frappe instance and generate/store API keys in SQLite
+- **Manage connections** — add, activate, or delete multiple Frappe instances
+- **Browse cached courses** — view course specs saved in SQLite
+- **Import courses** from Frappe into the local cache
+- **Re-upload courses** to any Frappe instance by course ID
+- **View audit logs** — all operations are logged
+
+To run the dashboard standalone: `frappe-lms-dashboard`
 
 ## Core Workflow: Creating a Comprehensive Course
 
 ### Option A — One-shot with `create_full_course` (preferred for AI agents)
 
-Pass a single JSON spec that defines the entire course structure. The tool creates the course, all chapters, all lessons (with EditorJS content), and all quizzes (with questions) in one call.
+Pass a single JSON spec that defines the entire course structure. The tool creates the course, all chapters, all lessons (with EditorJS content), and all quizzes (with questions) in one call. The course spec is **automatically cached** to SQLite for future re-upload.
 
 ```
 create_full_course(spec='{
@@ -143,7 +157,16 @@ The `content` field on lessons is an EditorJS JSON string. Use `build_lesson_con
 - `issue_certificate(course, member, template, ...)` — issue certificate
 
 ### High-level
-- `create_full_course(spec)` — create entire course from JSON spec
+- `create_full_course(spec)` — create entire course from JSON spec (auto-caches to SQLite)
+
+### Connections & Cache (SQLite memory)
+- `list_connections()` — list all saved Frappe connections (secrets masked)
+- `switch_connection(connection_name)` — activate a different Frappe instance
+- `list_cached_courses(connection_name="")` — list courses from SQLite cache (fast, no Frappe query)
+- `get_cached_course(course_id)` — get full cached course including spec JSON
+- `reupload_course(course_id, connection_name="")` — re-upload a cached course spec to a Frappe instance
+- `import_course_from_frappe(course_slug)` — fetch a course from Frappe and cache it to SQLite
+- `list_operation_logs(limit=50)` — view audit trail of all operations
 
 ## Tips
 
@@ -153,3 +176,4 @@ The `content` field on lessons is an EditorJS JSON string. Use `build_lesson_con
 - Questions are reusable across quizzes (standalone LMS Question docs).
 - Always create the course first, then chapters, then lessons.
 - Use `published: false` during creation, then `publish_course` when ready.
+- Courses created via `create_full_course` are auto-cached to SQLite. Use `list_cached_courses` to browse them and `reupload_course` to deploy to another Frappe instance without re-specifying details.

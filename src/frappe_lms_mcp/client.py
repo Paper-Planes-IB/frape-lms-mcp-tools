@@ -6,10 +6,16 @@ authentication, providing a small typed surface for the MCP tools.
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
 
 import httpx
+
+# Silence httpx INFO-level logs (e.g. "HTTP Request: POST ...") that would
+# leak into the MCP stdio transport as noise and confuse clients.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
 class FrappeAPIError(Exception):

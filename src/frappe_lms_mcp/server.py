@@ -13,11 +13,16 @@ Configuration is via environment variables (see :class:`FrappeClient`):
 
 from __future__ import annotations
 
+import logging
 import sys
 
 from mcp.server.fastmcp import FastMCP
 
 from . import tools
+
+# Silence noisy INFO logs from the MCP server framework itself
+# ("Processing request of type ...") that would leak into the stdio transport.
+logging.getLogger("mcp.server").setLevel(logging.WARNING)
 from .client import FrappeAPIError, FrappeClient
 
 mcp = FastMCP(
