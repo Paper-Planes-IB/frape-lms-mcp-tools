@@ -29,7 +29,9 @@ async def main():
             quizzes=await call('list_quizzes',{'limit':200}); assert quizzes
             await call('get_quiz',{'quiz':quizzes[0]['name']})
             await call('list_enrollments',{'limit':1}); await call('list_batches')
-            articles=await call('list_kb_articles',{'limit':1}); assert articles['articles']
+            articles=await call('list_kb_articles'); assert articles['articles']
+            assert all(set(row)=={'name','title','category','snippet'} and len(row['snippet'])<=300 for row in articles['articles'])
+            list_bytes=len(json.dumps(articles,ensure_ascii=False).encode())
             article=await call('get_kb_article',{'name':articles['articles'][0]['name']});assert article['content']
             search=await call('search_lms',{'query':'BPM'});assert search['results']
             imported=await call('import_course_from_frappe',{'course_slug':courses[0]['name']});assert imported['ok']
@@ -37,6 +39,6 @@ async def main():
             for name in ['create_course','delete_course']:
                 bad=await session.call_tool(name,{'course':'nonexistent'}); assert bad.isError
             print(json.dumps({'unauthorized':401,'tools':sorted(names),'courses':len(courses),'quizzes':len(quizzes),
-                  'lesson_text':True,'wiki_content':True,'search_results':len(search['results']),'cache':True,'writes_absent':True}))
+                  'lesson_text':True,'wiki_content':True,'article_count':len(articles['articles']),'article_list_bytes':list_bytes,'full_article_characters':len(article['content']),'search_results':len(search['results']),'cache':True,'writes_absent':True}))
 
 asyncio.run(main())

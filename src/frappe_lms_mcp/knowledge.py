@@ -42,6 +42,23 @@ def search_rows(dt, fields, filters, query, limit=50):
     from urllib.parse import quote
     return client._request('GET','/api/resource/'+quote(dt,safe=''),params=params)['data']
 
+SNIPPET_LENGTH = 300
+
+
+def article_summary(dt, row, schema, query=''):
+    text = ' '.join(plain_text(row.get(schema['content'], '')).split())
+    position = text.casefold().find(query.casefold()) if query else -1
+    start = max(0, position - 80) if position >= 0 else 0
+    prefix = '…' if start else ''
+    excerpt = text[start:start + SNIPPET_LENGTH - len(prefix)]
+    if start + len(excerpt) < len(text):
+        excerpt = excerpt[:-1] + '…'
+    return {'name': dt + '::' + row['name'],
+            'title': row.get(schema['title'], ''),
+            'category': row.get(schema.get('category', ''), ''),
+            'snippet': prefix + excerpt}
+
+
 def list_kb_articles(query='', category='', limit=50):
     limit=max(1,min(200,limit)); result=[]; truncated=False
     for dt,schema in schemas().items():
@@ -49,7 +66,7 @@ def list_kb_articles(query='', category='', limit=50):
         if filters is None: continue
         fields=list(dict.fromkeys(['name',schema['title'],schema['content']]+([schema['category']] if schema.get('category') else [])))
         rows=search_rows(dt,fields,filters,query,limit)
-        result.extend(article(dt,row,schema) for row in rows[:limit])
+        result.extend(article_summary(dt,row,schema,query) for row in rows[:limit])
         truncated |= len(rows)>limit
     return {'articles':result[:limit], 'truncated':truncated or len(result)>limit}
 
@@ -80,6 +97,7 @@ def search_lms(query):
             results.append({'doctype':dt,'name':row['name'],'title':row['title'],'excerpt':text[start:start+700]})
     kb=list_kb_articles(query=query)
     for row in kb['articles']:
-        body=row.pop('content'); pos=body.casefold().find(query.casefold()); start=max(0,pos-120)
-        row['excerpt']=body[start:start+700]; results.append(row)
+        row['doctype'], row['document_name'] = row['name'].split('::', 1)
+        row['excerpt'] = row.pop('snippet')
+        results.append(row)
     return {'results':results,'truncated':truncated or kb['truncated']}

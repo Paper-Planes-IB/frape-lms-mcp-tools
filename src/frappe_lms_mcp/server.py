@@ -70,7 +70,7 @@ async def health(request):
 
 @mcp.tool()
 def list_kb_articles(query: str = "", category: str = "", limit: int = 50) -> str:
-    """List published knowledge articles. Category is the parent document for Wiki Document."""
+    """List published article IDs, titles, categories and snippets (max 300 characters). Use get_kb_article for full content. Category is the parent document for Wiki Document."""
     from .knowledge import list_kb_articles as run
     return _json(run(query, category, limit))
 

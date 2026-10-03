@@ -93,3 +93,33 @@ def test_search_queries_full_content(monkeypatch):
     assert all(x[0]=='GET' for x in calls)
     assert 'content' in calls[1][2]['or_filters'] and 'body' in calls[1][2]['or_filters']
     assert 'is_published' in calls[2][2]['filters']
+
+
+def test_kb_list_is_bounded_but_get_is_complete(monkeypatch):
+    from frappe_lms_mcp import knowledge
+    long_content = 'Начало ' + ('длинная статья ' * 100000) + ' NEEDLE конец'
+    row = {'name':'article-1','title':'Title','parent_wiki_document':'Category',
+           'content':long_content,'is_published':1}
+    monkeypatch.setenv('KB_DOCTYPES','Wiki Document')
+    monkeypatch.setattr(knowledge,'search_rows',lambda *args, **kwargs:[row]*201)
+    result=knowledge.list_kb_articles(limit=200)
+    assert result['truncated'] and len(result['articles'])==200
+    assert all(set(item)=={'name','title','category','snippet'} for item in result['articles'])
+    assert all(len(item['snippet'])<=300 for item in result['articles'])
+    assert len(json.dumps(result,ensure_ascii=False))<90000
+    class Fake:
+        def get_doc(self,dt,name): return {'data':row}
+    monkeypatch.setattr(knowledge,'get_client',lambda:Fake())
+    full=knowledge.get_kb_article(result['articles'][0]['name'])
+    assert full['content']==long_content
+    assert 'NEEDLE' in knowledge.list_kb_articles(query='NEEDLE',limit=1)['articles'][0]['snippet']
+
+
+def test_search_kb_uses_snippet_without_content(monkeypatch):
+    from frappe_lms_mcp import knowledge
+    monkeypatch.setattr(knowledge,'search_rows',lambda *args,**kwargs:[])
+    monkeypatch.setattr(knowledge,'list_kb_articles',lambda **kwargs:{'articles':[
+        {'name':'Wiki Document::x','title':'Title','category':'Category','snippet':'needle excerpt'}], 'truncated':False})
+    result=knowledge.search_lms('needle')['results'][0]
+    assert result['excerpt']=='needle excerpt' and result['doctype']=='Wiki Document'
+    assert 'content' not in result and 'snippet' not in result
