@@ -48,34 +48,7 @@ def get_client() -> FrappeClient:
     """
     global _client
     if _client is None:
-        from . import db
-
-        db.init_db()
-        conn = db.get_active_connection()
-        if conn:
-            if conn.get("api_key") and conn.get("api_secret"):
-                # Token auth — no login() call needed
-                _client = FrappeClient(
-                    url=conn["base_url"],
-                    site=conn["site"],
-                    api_key=conn["api_key"],
-                    api_secret=conn["api_secret"],
-                )
-            elif conn.get("password"):
-                # Session auth — login with stored password
-                _client = FrappeClient(
-                    url=conn["base_url"],
-                    site=conn["site"],
-                    username=conn.get("username") or "",
-                    password=conn["password"],
-                )
-                _client.login()
-            else:
-                # No usable credentials in this connection — fall back to env
-                _client = FrappeClient()
-        else:
-            # No active connection — use environment variables
-            _client = FrappeClient()
+        _client = FrappeClient()
     return _client
 
 
@@ -139,14 +112,7 @@ def get_course(course: str) -> dict:
     client = get_client()
     doc = client.get_doc("LMS Course", course)
     data = doc.get("data", doc)
-    # Fetch the outline via the whitelisted utility for a richer view
-    try:
-        outline = client.call_method(
-            "lms.lms.utils.get_course_outline", course=course
-        )
-        data["outline"] = outline
-    except FrappeAPIError:
-        pass  # outline is optional; the doc alone is still useful
+    data["outline"] = [get_chapter(row["chapter"]) for row in data.get("chapters", []) if row.get("chapter")]
     return data
 
 
@@ -437,14 +403,14 @@ def create_lesson(chapter: str, title: str, content: str = "") -> dict:
 
 
 def get_lesson(lesson: str) -> dict:
-    """Get a lesson with its content and metadata.
-
-    Args:
-        lesson: The lesson name.
-    """
-    client = get_client()
-    doc = client.get_doc("Course Lesson", lesson)
-    return doc.get("data", doc)
+    """Read lesson content as plain text/Markdown."""
+    from .text import plain_text
+    doc = get_client().get_doc("Course Lesson", lesson)
+    data = doc.get("data", doc)
+    for field in ("content", "body", "instructor_content", "instructor_notes"):
+        if field in data:
+            data[field] = plain_text(data[field])
+    return data
 
 
 def update_lesson(
@@ -731,29 +697,10 @@ def get_quiz(quiz: str, *, with_questions: bool = True) -> dict:
     data = doc.get("data", doc)
     if not with_questions:
         return data
-    # Enrich with full question details via the whitelisted utility.
-    try:
-        enriched = client.call_method(
-            "lms.lms.utils.get_quiz_with_questions", quiz=quiz
-        )
-        if isinstance(enriched, dict) and enriched.get("questions_by_name"):
-            # Merge question details into the child table rows
-            qbn = enriched["questions_by_name"]
-            for row in data.get("questions", []):
-                qname = row.get("question")
-                if qname and qname in qbn:
-                    row["question_detail"] = qbn[qname].get("question")
-                    row["question_type"] = qbn[qname].get("type")
-                    row["options"] = {
-                        k: v for k, v in qbn[qname].items()
-                        if k.startswith("option_") and v
-                    }
-                    row["correct"] = {
-                        k: v for k, v in qbn[qname].items()
-                        if k.startswith("is_correct_") and v
-                    }
-    except FrappeAPIError:
-        pass  # enrichment is optional; return the doc as-is
+    for row in data.get("questions", []):
+        if row.get("question"):
+            detail = client.get_doc("LMS Question", row["question"])
+            row["question_detail"] = detail.get("data", detail)
     return data
 
 
@@ -848,7 +795,7 @@ def list_enrollments(course: str | None = None, student: str | None = None,
     return client.get_list(
         "LMS Enrollment",
         fields=["name", "member", "member_name", "course", "progress",
-                "member_type", "role", "creation"],
+                "member_type", "creation"],
         filters=filters or None,
         limit_page_length=limit,
         order_by="creation desc",
@@ -1251,12 +1198,7 @@ def list_cached_courses(connection_name: str = "") -> list[dict]:
     from . import db
 
     db.init_db()
-    if connection_name:
-        conn = db.get_connection_by_name(connection_name)
-        if not conn:
-            return []
-        return db.list_cached_courses(conn["id"])
-    return db.list_cached_courses()
+    return db.list_cached_courses(_cache_connection()["id"])
 
 
 def get_cached_course(course_id: int) -> dict | None:
@@ -1272,7 +1214,8 @@ def get_cached_course(course_id: int) -> dict | None:
     from . import db
 
     db.init_db()
-    return db.get_cached_course(course_id)
+    row = db.get_cached_course(course_id)
+    return row if row and row["connection_id"] == _cache_connection()["id"] else None
 
 
 def reupload_course(course_id: int, connection_name: str = "") -> dict:
@@ -1361,9 +1304,7 @@ def import_course_from_frappe(course_slug: str) -> dict:
     db.init_db()
     # Fetch course details from Frappe
     details = get_course(course_slug)
-    active = db.get_active_connection()
-    if not active:
-        return {"ok": False, "error": "No active connection in database"}
+    active = _cache_connection()
 
     title = details.get("title", course_slug)
     outline = details.get("outline", [])
@@ -1404,3 +1345,17 @@ def list_operation_logs(limit: int = 50) -> list[dict]:
 
     db.init_db()
     return db.list_operations(limit)
+
+
+def _cache_connection():
+    from . import db
+    import hashlib
+    client = get_client()
+    label = "env-" + hashlib.sha256((client.base_url + client.site + client.api_key).encode()).hexdigest()[:24]
+    conn = db.get_connection_by_name(label)
+    if conn is None:
+        try:
+            conn = db.add_connection(label, client.base_url, client.site, activate=False)
+        except __import__("sqlite3").IntegrityError:
+            conn = db.get_connection_by_name(label)
+    return conn

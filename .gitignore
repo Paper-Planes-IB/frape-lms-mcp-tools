@@ -30,3 +30,4 @@ build/
 *.swo
 .idea/
 .vscode/
+.pytest_cache/

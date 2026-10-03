@@ -1,0 +1,13 @@
+services:
+  mcp:
+    build: ..
+    restart: unless-stopped
+    env_file: ../.env
+    ports: ["127.0.0.1:8093:8000"]
+    volumes: ["mcp_data:/data"]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+volumes:
+  mcp_data:

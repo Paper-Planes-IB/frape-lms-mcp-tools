@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import logging
 import os
+from urllib.parse import quote, urlsplit
+from .security import read_only
 from typing import Any
 
 import httpx
@@ -67,20 +69,14 @@ class FrappeClient:
         self.api_secret = api_secret or os.environ.get("FRAPPE_API_SECRET", "")
         self._use_token = bool(self.api_key and self.api_secret)
 
-        # Session-auth fallback
-        self.username = username or os.environ.get("FRAPPE_USERNAME", "Administrator")
-        self.password = password or os.environ.get("FRAPPE_PASSWORD", "")
-
-        if not self._use_token and not self.password:
-            raise FrappeAPIError(
-                "No credentials configured.  Provide either:\n"
-                "  • api_key + api_secret (token auth, recommended), or\n"
-                "  • FRAPPE_PASSWORD env var (session auth).\n"
-                "Login via the dashboard at http://localhost:8080/login "
-                "to generate API keys automatically."
-            )
-
-        self._client = httpx.Client(timeout=timeout)
+        self.username = ""
+        self.password = ""
+        if not self._use_token:
+            raise FrappeAPIError("FRAPPE_API_KEY and FRAPPE_API_SECRET are required")
+        parts = urlsplit(self.base_url)
+        if parts.scheme != "https" or not parts.hostname or parts.username or parts.password or parts.query or parts.fragment or parts.path:
+            raise FrappeAPIError("FRAPPE_URL must be an HTTPS origin without credentials or path")
+        self._client = httpx.Client(timeout=timeout, follow_redirects=False, trust_env=False)
         self._logged_in = self._use_token  # token auth needs no login
 
     # ------------------------------------------------------------------ #
@@ -153,6 +149,8 @@ class FrappeClient:
         json: dict | None = None,
         data: dict | None = None,
     ) -> Any:
+        if read_only() and (method != "GET" or not path.startswith("/api/resource/")):
+            raise FrappeAPIError("Read-only mode: request denied")
         self._ensure_session()
         url = f"{self.base_url}{path}"
         resp = self._client.request(
@@ -163,7 +161,7 @@ class FrappeClient:
             data=data,
             headers=self._headers(),
         )
-        if resp.status_code >= 400:
+        if resp.status_code >= 300:
             self._raise_error(resp)
         # Some endpoints return empty body on success
         if not resp.content:
@@ -174,30 +172,7 @@ class FrappeClient:
             return resp.text
 
     def _raise_error(self, resp: httpx.Response) -> None:
-        try:
-            body = resp.json()
-            # Frappe nests the actual message under "exception" or "_server_messages"
-            exc = body.get("exception", "")
-            msgs = body.get("_server_messages", "")
-            if isinstance(msgs, str) and msgs:
-                import json as _json
-
-                try:
-                    parsed = _json.loads(msgs)
-                    text = " | ".join(
-                        m.get("message", str(m)) if isinstance(m, dict) else str(m)
-                        for m in parsed
-                    )
-                except Exception:
-                    text = msgs
-            else:
-                text = str(body)
-            # Strip HTML from the exception type prefix for readability
-            exc_short = exc.split(":")[-1].strip() if exc else ""
-            msg = f"{exc_short}: {text}" if exc_short else text
-        except Exception:
-            msg = resp.text
-        raise FrappeAPIError(msg, resp.status_code, resp.text)
+        raise FrappeAPIError(f"Frappe request failed (HTTP {resp.status_code})", resp.status_code)
 
     # ------------------------------------------------------------------ #
     #  Resource CRUD  (frappe.client.* via /api/resource)
@@ -205,7 +180,7 @@ class FrappeClient:
 
     def get_doc(self, doctype: str, name: str) -> dict:
         """Fetch a single document by doctype + name."""
-        return self._request("GET", f"/api/resource/{doctype}/{name}")
+        return self._request("GET", f"/api/resource/{quote(doctype, safe='')}/{quote(name, safe='')}")
 
     def get_value(
         self,
@@ -218,27 +193,27 @@ class FrappeClient:
         if fields:
             params["fields"] = fields if isinstance(fields, str) else json_dumps(fields)
         resp = self._request(
-            "GET", f"/api/resource/{doctype}/{name}", params=params
+            "GET", f"/api/resource/{quote(doctype, safe='')}/{quote(name, safe='')}", params=params
         )
         return resp.get("data", resp)
 
     def insert(self, doctype: str, data: dict) -> dict:
         """Create a new document.  Returns the created doc."""
         resp = self._request(
-            "POST", f"/api/resource/{doctype}", json=data
+            "POST", f"/api/resource/{quote(doctype, safe='')}", json=data
         )
         return resp.get("data", resp)
 
     def update(self, doctype: str, name: str, data: dict) -> dict:
         """Update an existing document."""
         resp = self._request(
-            "PUT", f"/api/resource/{doctype}/{name}", json=data
+            "PUT", f"/api/resource/{quote(doctype, safe='')}/{quote(name, safe='')}", json=data
         )
         return resp.get("data", resp)
 
     def delete(self, doctype: str, name: str) -> None:
         """Delete a document."""
-        self._request("DELETE", f"/api/resource/{doctype}/{name}")
+        self._request("DELETE", f"/api/resource/{quote(doctype, safe='')}/{quote(name, safe='')}")
 
     def get_list(
         self,
@@ -252,7 +227,7 @@ class FrappeClient:
     ) -> list[dict]:
         """List documents matching filters."""
         params: dict = {
-            "limit_page_length": limit_page_length,
+            "limit_page_length": max(1, min(200, limit_page_length)),
             "limit_start": limit_start,
         }
         if fields:
@@ -261,7 +236,7 @@ class FrappeClient:
             params["filters"] = json_dumps(filters)
         if order_by:
             params["order_by"] = order_by
-        resp = self._request("GET", f"/api/resource/{doctype}", params=params)
+        resp = self._request("GET", f"/api/resource/{quote(doctype, safe='')}", params=params)
         return resp.get("data", resp)
 
     # ------------------------------------------------------------------ #
@@ -274,10 +249,12 @@ class FrappeClient:
         ``method`` is the dotted path, e.g. ``"lms.api.upsert_chapter"``.
         Keyword arguments are sent as JSON in the request body.
         """
+        if read_only():
+            raise FrappeAPIError("Read-only mode: method calls denied")
         self._ensure_session()
         url = f"{self.base_url}/api/method/{method}"
         resp = self._client.post(url, json=kwargs, headers=self._headers())
-        if resp.status_code >= 400:
+        if resp.status_code >= 300:
             self._raise_error(resp)
         if not resp.content:
             return None
@@ -300,6 +277,8 @@ class FrappeClient:
         If that fails (some endpoints don't support the ``args`` convention),
         fall back to sending each value as ``cmd``-less query params.
         """
+        if read_only():
+            raise FrappeAPIError("Read-only mode: method calls denied")
         self._ensure_session()
         url = f"{self.base_url}/api/method/{method}"
         # Try the standard Frappe positional-args convention first:
@@ -307,7 +286,7 @@ class FrappeClient:
         resp = self._client.post(
             url, data={"args": json_dumps(args)}, headers=self._headers()
         )
-        if resp.status_code >= 400:
+        if resp.status_code >= 300:
             self._raise_error(resp)
         if not resp.content:
             return None

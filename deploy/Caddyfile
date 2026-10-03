@@ -1,0 +1,4 @@
+{$MCP_DOMAIN} {
+    # No URL access log: query tokens must never be persisted.
+    reverse_proxy mcp:8000
+}

@@ -1,0 +1,25 @@
+services:
+  mcp:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - mcp_data:/data
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  proxy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      MCP_DOMAIN: ${MCP_DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+volumes:
+  mcp_data:
+  caddy_data:
+  caddy_config:
